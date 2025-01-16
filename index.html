@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sprite animation</title>
+  <style>
+    
+    body{
+       margin: 0;
+       padding: 0;
+       overflow: hidden;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+       align-items: center;
+       width: 100vw;
+       height: 100vh;
+       background: #68FF79;
+    }
+    
+    canvas{
+      margin: 2rem;
+    }
+    
+    
+    select{
+      margin: 30px;
+      width: 80%;
+      padding: 10px;
+      font-size: 1.2rem;
+      border-radius: 15px;
+      border:2px solid #0E6518;
+      background: transparent;
+      outline: none;
+    }
+    
+    .speak{
+      width: 80%;
+      background: red;
+      padding: .5rem;
+      border: none;
+      border-radius: .5rem;
+      font-size: 1.2rem;
+      color: white;
+    }
+    
+    .speak:active{
+      background: red
+    }
+    
+    h3{
+      font-size: 2rem;
+    }
+    
+  </style>
+</head>
+
+<body>
+<h3>Robot Dog 🐕</h3>
+
+<select name="" id="">
+  <option selected value="stand up">default (stand up)</option>
+  <option value="jump up">jump up</option>
+  <option value="jump down">jump down</option>
+  <option value="run">run</option>
+  <option value="dizzy">dizzy</option>
+  <option value="sit down">sit down</option>
+  <option value="roll">roll</option>
+  <option value="eat">eat</option>
+  <option value="hurted">hurted</option>
+  <option value="hitted">hitted</option>
+</select>
+<canvas></canvas>
+<button class="speak">Give Command (speak)</button>
+
+<script>
+  
+  
+  const canvas = document.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width = 250;
+  const height = canvas.height = 280;
+  const selectedAction = document.querySelector('select');
+  const commandBtn = document.querySelector('.speak');
+  const commands = [];
+  
+  [...selectedAction.children].forEach(action => {
+    commands.push(action.value)
+  })
+  
+  
+  let dogFrame = new Image;
+  dogFrame.src = 'spritedog.png';
+  
+  
+  function getMaxCol(act) {
+      if(act === 'stand up' || act === 'jump up'
+      || act === 'jump down' || act === 'roll' || act === 'eat'){
+        return 7
+      }else if(act === 'run'){
+        return 9
+      }else if(act === 'dizzy'){
+        return 11
+      }else if(act === 'sit down'){
+        return 5
+      }else if(act === 'hurted'){
+        return 12
+      }else{
+        return 4
+      }
+  };
+  
+  
+    
+  
+  
+  //canvas draw image method accept 5 argument (src,x,y,w,h);
+let frameX = 0;
+let frameY = 0;
+const column = 12;
+const row = 10;
+let maxCol = 7; // for row 1 default dog
+let looper = 0;
+let rowAnim = 0;
+
+
+// user control
+
+let options = [...selectedAction.children];
+
+setInterval(() => {
+options.forEach((opt,ind) => {
+  if(opt.value === selectedAction.value){
+    rowAnim = ind;
+  }
+});
+maxCol = getMaxCol(selectedAction.value);
+
+});
+
+ 
+ let animInterval = 50;
+ // draw image (image,cx,cy,cw,ch,dx,dy,dw,dh)
+ 
+ // animte dog
+ ctx.font = "20px sanserif";
+ ctx.fillText('Loading Robot Dog',width/4,20)
+ dogFrame.onload = () => {
+  
+  
+  setInterval(() => {
+    ctx.clearRect(0,0,width,height)
+    
+    const frameWidth = dogFrame.width / column;
+    const frameHeight = dogFrame.height / row + 10;
+    
+    ctx.drawImage(dogFrame,frameX,frameY,
+    frameWidth,frameHeight,0,0,width,height);
+      
+   if(looper < maxCol){
+      frameX = looper * frameWidth;
+      frameY = rowAnim * frameHeight;
+      looper++
+    }else{
+      looper = 0;
+      frameX = 0;
+      frameY = rowAnim * frameHeight;
+    }
+    
+
+      
+  },animInterval);
+ 
+ }
+  
+ 
+ let listening = false;
+ let speaking = false;
+ 
+ const updateBtn = e => {
+   if(listening){
+     commandBtn.style.background = "green";
+     commandBtn.textContent = "Listening ( Please Talk )";
+   }else{
+     commandBtn.style.background = "red";
+     commandBtn.textContent = "Give Command (Speak)";
+   }
+ }
+ 
+ commandBtn.onclick = e => {
+   if(!listening && !speaking){
+     listening = true;
+     const recogniser = new webkitSpeechRecognition();
+     recogniser.start();
+     
+     recogniser.onstart = e => {
+       listening = true;
+       updateBtn();
+     }
+     
+     recogniser.onend = e => {
+       listening = false;
+       updateBtn()
+     }
+     
+     recogniser.onerror = e => {
+       listening = false;
+       updateBtn()
+     }
+     
+     recogniser.onresult = e => {
+       const command = e.results[0][0].transcript;
+       respond(command);
+     }
+     
+     
+   }
+ }
+ 
+ let speaker;
+ const speak = text => {
+   speaker = new SpeechSynthesisUtterance(text);
+   speaker.lang = "en-US";
+   speaker.rate = .8;
+   speaker.pitch = 1;
+   
+   speechSynthesis.speak(speaker);
+   speaker.onstart = e => {
+     speaking = true
+   }
+   
+   speaker.onend = e => {
+    speaking = false
+    updateDog();
+   }
+   
+   speaker.onerror = e => {
+     speaking = false
+   }
+ }
+ 
+ let updateDog = e => null;
+ const defaultSpeak = "Talk And Give Command To The Dog"
+ 
+ setTimeout(e => speak(defaultSpeak),2000)
+ 
+
+ 
+ const respond = command => {
+   if(command && commands.includes(command)){
+     if(command == 'jump up'){
+       speak("jumping up")
+     }else if(command == "jump down"){
+       speak("jumping down")
+     }else if(command == "run"){
+       speak("running")
+     }else if(command == "dizzy"){
+       speak("becoming dizzy")
+     }else if(command == "roll"){
+       speak("rolling")
+     }else if(command == "eat"){
+       speak("eating")
+     }else if(command == "hurted"){
+       speak("becoming hurted")
+     }else if(command == 'hitted'){
+       speak("becoming hitted")
+     }else if(command == "sit down"){
+       speak('sitting down')
+     }else{
+       speak('standing up')
+     }
+     
+     updateDog = e => {
+       selectedAction.value = command;
+     }
+    
+     
+   }else{
+     speak(`command ${command} is not found`)
+   }
+ }
+ 
+
+  
+</script>
+</body>
+
+</html>
